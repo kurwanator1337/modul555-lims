@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: modul555-lims-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-modul555_lims}
+      POSTGRES_USER: ${POSTGRES_USER:-lims}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lims}
+    volumes:
+      - lims-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+    networks:
+      - lims
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: modul555-lims-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Default: Host=postgres;Port=5432;Database=${POSTGRES_DB:-modul555_lims};Username=${POSTGRES_USER:-lims};Password=${POSTGRES_PASSWORD:-lims}
+      Keycloak__Authority: ${KEYCLOAK_AUTHORITY:-http://72.56.252.95:8080/realms/stroy-company}
+      Keycloak__Audience: ${KEYCLOAK_AUDIENCE:-}
+      Keycloak__TokenClientId: ${KEYCLOAK_TOKEN_CLIENT_ID:-admin-cli}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - lims
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: modul555-lims-web
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    depends_on:
+      - api
+    networks:
+      - lims
+
+volumes:
+  lims-pgdata:
+
+networks:
+  lims:
+    driver: bridge

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Modul555.Lims.Api/Modul555.Lims.Api.csproj" />
+    <Project Path="src/Modul555.Lims.Application/Modul555.Lims.Application.csproj" />
+    <Project Path="src/Modul555.Lims.Domain/Modul555.Lims.Domain.csproj" />
+    <Project Path="src/Modul555.Lims.Infrastructure/Modul555.Lims.Infrastructure.csproj" />
+  </Folder>
+</Solution>
