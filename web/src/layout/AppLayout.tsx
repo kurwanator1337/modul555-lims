@@ -10,11 +10,12 @@ import {
   WarningOutlined,
   DashboardOutlined,
   ToolOutlined,
+  BookOutlined,
 } from "@ant-design/icons";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import type { MenuProps } from "antd";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Logo } from "../components/Logo";
 import { loggedOut } from "../features/auth/authSlice";
 import type { RootState } from "../store";
@@ -24,12 +25,32 @@ function isAdmin(roles: string[] | undefined) {
   return !!roles?.some((r) => r === "admin" || r === "manager");
 }
 
+function groupForPath(pathname: string): string | null {
+  if (pathname.startsWith("/incoming") || pathname.startsWith("/journals/incoming"))
+    return "grp-incoming";
+  if (pathname.startsWith("/operational")) return "grp-operational";
+  if (pathname.startsWith("/nsi")) return "grp-nsi";
+  if (pathname.startsWith("/admin")) return "grp-admin";
+  return null;
+}
+
 export default function AppLayout() {
   const location = useLocation();
   const user = useSelector((s: RootState) => s.auth.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const admin = isAdmin(user?.roles);
+
+  const [openKeys, setOpenKeys] = useState<string[]>(() => {
+    const g = groupForPath(location.pathname);
+    return g ? [g] : [];
+  });
+
+  useEffect(() => {
+    const g = groupForPath(location.pathname);
+    if (!g) return;
+    setOpenKeys((prev) => (prev.includes(g) ? prev : [...prev, g]));
+  }, [location.pathname]);
 
   const items: MenuProps["items"] = useMemo(() => {
     const base: MenuProps["items"] = [
@@ -44,12 +65,12 @@ export default function AppLayout() {
         label: <Link to="/workplace">АРМ лаборанта</Link>,
       },
       {
-        type: "group",
+        key: "grp-incoming",
+        icon: <InboxOutlined />,
         label: "Входной контроль",
         children: [
           {
             key: "/incoming/batches",
-            icon: <InboxOutlined />,
             label: <Link to="/incoming/batches">Партии сырья</Link>,
           },
           {
@@ -63,12 +84,12 @@ export default function AppLayout() {
         ],
       },
       {
-        type: "group",
+        key: "grp-operational",
+        icon: <AppstoreOutlined />,
         label: "Операционный контроль",
         children: [
           {
             key: "/operational/batches",
-            icon: <AppstoreOutlined />,
             label: <Link to="/operational/batches">Производственные партии</Link>,
           },
           {
@@ -98,7 +119,8 @@ export default function AppLayout() {
         label: <Link to="/personnel">Персонал</Link>,
       },
       {
-        type: "group",
+        key: "grp-nsi",
+        icon: <BookOutlined />,
         label: "Справочники",
         children: [
           {
@@ -147,12 +169,12 @@ export default function AppLayout() {
 
     if (admin) {
       base.push({
-        type: "group",
+        key: "grp-admin",
+        icon: <SettingOutlined />,
         label: "Администрирование",
         children: [
           {
             key: "/admin",
-            icon: <SettingOutlined />,
             label: <Link to="/admin">Обзор</Link>,
           },
           {
@@ -248,6 +270,8 @@ export default function AppLayout() {
           theme="dark"
           mode="inline"
           selectedKeys={[location.pathname]}
+          openKeys={openKeys}
+          onOpenChange={setOpenKeys}
           items={items}
           style={{ background: brand.deepBlue, borderInlineEnd: "none" }}
         />
